@@ -10,13 +10,13 @@ at(P) :- pos(P,X,Y) & pos(r1,X,Y).
 
 /* Plans */
 
-+!check(slots) : not garbage(r1)
++!check(slots) : not tarea(r1)
    <- next(slot);
       !check(slots).
 !check(slots).
 
-+garbage(r1)<- pick(garb);
-      			!check(slots).
++tarea(r1)<- realizar_tarea(tarea);
+      		!check(slots).
 !check(slots).
 
 				

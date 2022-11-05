@@ -15,7 +15,7 @@ at(P) :- pos(P,X,Y) & pos(r1,X,Y).
       !check(slots).
 !check(slots).
 
-+garbage(r1)<- pick(garb); next(slot);
++garbage(r1)<- pick(garb);
       			!check(slots).
 !check(slots).
 

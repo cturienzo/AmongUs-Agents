@@ -18,11 +18,13 @@ public class Nave extends Environment {
 
 
     public static final Term    ns = Literal.parseLiteral("next(slot)");
-    public static final Term    pg = Literal.parseLiteral("pick(garb)");
+    /*public static final Term    pg = Literal.parseLiteral("pick(garb)");
     public static final Term    dg = Literal.parseLiteral("drop(garb)");
-    public static final Term    bg = Literal.parseLiteral("burn(garb)");
-    public static final Literal g1 = Literal.parseLiteral("garbage(r1)");
-    public static final Literal g2 = Literal.parseLiteral("garbage(r2)");
+    public static final Term    bg = Literal.parseLiteral("burn(garb)");*/
+	public static final Term    rt = Literal.parseLiteral("realizar_tarea(tarea)");
+
+    public static final Literal g1 = Literal.parseLiteral("tarea(r1)");
+    public static final Literal g2 = Literal.parseLiteral("tarea_completada(r1)");
 
     static Logger logger = Logger.getLogger(Nave.class.getName());
 
@@ -47,13 +49,13 @@ public class Nave extends Environment {
                 int x = (int)((NumberTerm)action.getTerm(0)).solve();
                 int y = (int)((NumberTerm)action.getTerm(1)).solve();
                 model.moveTowards(x,y);
-            } else if (action.equals(pg)) {
-                model.pickGarb();
-            } else if (action.equals(dg)) {
+            } else if (action.equals(rt)) {
+                model.realizar_tarea();
+            }/* else if (action.equals(dg)) {
                 //model.dropGarb();
             } else if (action.equals(bg)) {
-                //model.burnGarb();
-            } else {
+                //model.burnGarb();*/
+            else {
                 return false;
             }
         } catch (Exception e) {
@@ -148,7 +150,7 @@ public class Nave extends Environment {
             //setAgPos(1, getAgPos(1)); // just to draw it in the view
         }
 
-        void pickGarb() {
+        void realizar_tarea() {
             // r1 location has garbage
             if (model.hasObject(TAREA, getAgPos(0))) {
                 // sometimes the "picking" action doesn't work
