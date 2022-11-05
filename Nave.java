@@ -12,24 +12,24 @@ import java.util.logging.Logger;
 
 public class Nave extends Environment {
 
-    public static final int GSize = 7; // grid size
-    public static final int TAREA  = 16; // garbage code in grid model
-	public static final int TAREA_COMPLETADA  = 17; // garbage code in grid model
+    public static final int GSize = 10; // tamaÃ±o grid
+    public static final int TAREA = 16; // codigo tarea sin realizar
+	public static final int TAREA_COMPLETADA  = 32; // codigo tarea completada
 
 
-    public static final Term    ns = Literal.parseLiteral("next(slot)");
-    /*public static final Term    pg = Literal.parseLiteral("pick(garb)");
-    public static final Term    dg = Literal.parseLiteral("drop(garb)");
-    public static final Term    bg = Literal.parseLiteral("burn(garb)");*/
-	public static final Term    rt = Literal.parseLiteral("realizar_tarea(tarea)");
+    public static final Term ns = Literal.parseLiteral("next(slot)");
+	
+	public static final Term rt = Literal.parseLiteral("realizar_tarea(tarea)");
+	public static final Term st = Literal.parseLiteral("sabotear(tarea)");
+
 
     public static final Literal g1 = Literal.parseLiteral("tarea(r1)");
-    public static final Literal g2 = Literal.parseLiteral("tarea_completada(r1)");
+    public static final Literal g2 = Literal.parseLiteral("tarea_completada(r2)");
 
     static Logger logger = Logger.getLogger(Nave.class.getName());
 
     private NaveModel model;
-    private NaveView  view;
+    private NaveView view;
 
     @Override
     public void init(String[] args) {
@@ -47,15 +47,13 @@ public class Nave extends Environment {
                 model.nextSlot();
             } else if (action.getFunctor().equals("move_towards")) {
                 int x = (int)((NumberTerm)action.getTerm(0)).solve();
-                int y = (int)((NumberTerm)action.getTerm(1)).solve();
+                int y = (int)((NumberTerm)action.getTerm(0)).solve();
                 model.moveTowards(x,y);
             } else if (action.equals(rt)) {
-                model.realizar_tarea();
-            }/* else if (action.equals(dg)) {
-                //model.dropGarb();
-            } else if (action.equals(bg)) {
-                //model.burnGarb();*/
-            else {
+                model.realizar_tarea();      
+            }else if (action.equals(st)) {
+                model.sabotear();
+            }else {
                 return false;
             }
         } catch (Exception e) {
@@ -76,65 +74,101 @@ public class Nave extends Environment {
         clearPercepts();
 
         Location r1Loc = model.getAgPos(0);
-        //Location r2Loc = model.getAgPos(1);
+		Location r2Loc = model.getAgPos(1);
 
         Literal pos1 = Literal.parseLiteral("pos(r1," + r1Loc.x + "," + r1Loc.y + ")");
-        //Literal pos2 = Literal.parseLiteral("pos(r2," + r2Loc.x + "," + r2Loc.y + ")");
+		Literal pos2 = Literal.parseLiteral("pos(r2," + r2Loc.x + "," + r2Loc.y + ")");
 
-        addPercept(pos1);
-        //addPercept(pos2);
+        addPercept("r1",pos1);
+		addPercept("r2",pos2);
 
         if (model.hasObject(TAREA, r1Loc)) {
-            addPercept(g1);
+            addPercept("r1",g1);
         }
-        /*if (model.hasObject(TAREA, r2Loc)) {
-            addPercept(g2);
-        }*/
+	
+		if (model.hasObject(TAREA_COMPLETADA, r2Loc)) {
+            addPercept("r2",g2);
+        }
+		
+		
+
     }
 
     class NaveModel extends GridWorldModel {
 
         public static final int MErr = 2; // max error in pick garb
         int nerr; // number of tries of pick garb
-        //boolean r1HasGarb = false; // whether r1 is carrying garbage or not
 
         Random random = new Random(System.currentTimeMillis());
 
         private NaveModel() {
             super(GSize, GSize, 2);
-
+		
             // initial location of agents
             try {
-                setAgPos(0, 0, 0);
+				int x1 = random.nextInt(GSize);
+				int y1 = random.nextInt(GSize);
+				
+				int x2 = random.nextInt(GSize);
+				int y2 = random.nextInt(GSize);
+				
+                setAgPos(0, x1, y1);
+				setAgPos(1, x2, y2);
 
-                //Location r2Loc = new Location(GSize/2, GSize/2);
-                //setAgPos(1, r2Loc);
             } catch (Exception e) {
                 e.printStackTrace();
             }
 
-            // initial location of garbage
-            add(TAREA, 3, 0);
-            add(TAREA, GSize-1, 0);
-            add(TAREA, 1, 2);
-            add(TAREA, 0, GSize-2);
-            add(TAREA, GSize-1, GSize-1);
+            // crear n_tareas
+			crearTareas(8);
         }
+		
+		void crearTareas(int n_tareas) {
+			boolean[][] nave = new boolean[GSize][GSize];
+			int x,y;
+			Random r = new Random(System.currentTimeMillis());
+			for(int i=0; i<n_tareas; i++){
+				x = r.nextInt(GSize);
+				y = r.nextInt(GSize);
+				while (nave[x][y]){
+					x = r.nextInt(GSize);
+					y = r.nextInt(GSize);
+				}
+				add(TAREA, x, y);
+				nave[x][y] = true;
+			}
+		}
 
         void nextSlot() throws Exception {
             Location r1 = getAgPos(0);
-            r1.x++;
+			Location r2 = getAgPos(1);
+			
+            r1.x ++;
+			r2.x++;
+
             if (r1.x == getWidth()) {
                 r1.x = 0;
                 r1.y++;
             }
             // finished searching the whole grid
             if (r1.y == getHeight()) {
-                return;
+                r1.y = 0;
+                r1.x++;
+            }
+			 if (r2.x == getWidth()) {
+                r2.x = 0;
+                r2.y++;
+            }
+            // finished searching the whole grid
+            if (r2.y == getHeight()) {
+                r2.y = 0;
+                r2.x++;
             }
             setAgPos(0, r1);
-            //setAgPos(1, getAgPos(1)); // just to draw it in the view
+			setAgPos(1, r2);
         }
+		
+		
 
         void moveTowards(int x, int y) throws Exception {
             Location r1 = getAgPos(0);
@@ -147,42 +181,47 @@ public class Nave extends Environment {
             else if (r1.y > y)
                 r1.y--;
             setAgPos(0, r1);
-            //setAgPos(1, getAgPos(1)); // just to draw it in the view
         }
 
         void realizar_tarea() {
-            // r1 location has garbage
+            // hay una tarea en la posicion del agente 0
             if (model.hasObject(TAREA, getAgPos(0))) {
-                // sometimes the "picking" action doesn't work
-                // but never more than MErr times
-                if (true/*random.nextBoolean() /*|| nerr == MErr*/) {
+                // la realizacion de la tarea puede fallar
+                if (true) {
                     remove(TAREA, getAgPos(0));
-				    //add(TAREA_COMPLETADA, getAgPos(0));
+				    add(TAREA_COMPLETADA, getAgPos(0));
+					logger.info("Tarea completada");
                     nerr = 0;
-                    //r1HasGarb = true;
                 } else {
+					logger.info("Ha fallado la realizacion de la tarea");
+					logger.info("Volviendo a intentar la tarea");
                     nerr++;
                 }
             }
         }
-       /* void dropGarb() {
-            if (r1HasGarb) {
-                r1HasGarb = false;
-                add(TAREA, getAgPos(0));
+		
+		void sabotear() {
+			logger.info("saboteo en: " + getAgPos(1));
+            // hay una tarea en la posicion del agente 1
+            if (model.hasObject(TAREA_COMPLETADA, getAgPos(1))) {
+                // la realizacion del sabotaje puede fallar
+                if (true) {
+                    remove(TAREA_COMPLETADA, getAgPos(1));
+				    add(TAREA, getAgPos(1));
+					logger.info("Sabotaje completado");
+                } else {
+					logger.info("Ha fallado la realización del sabotaje");
+					logger.info("Volviendo a intentar el sabotaje");
+                }
             }
         }
-        void burnGarb() {
-            // r2 location has garbage
-            if (model.hasObject(TAREA, getAgPos(1))) {
-                remove(TAREA, getAgPos(1));
-            }
-        }*/
+
     }
 
     class NaveView extends GridWorldView {
 
         public NaveView(NaveModel model) {
-            super(model, "Mars World", 600);
+            super(model, "Among Us", 600);
             defaultFont = new Font("Arial", Font.BOLD, 18); // change default font
             setVisible(true);
             repaint();
@@ -191,13 +230,13 @@ public class Nave extends Environment {
         /** draw application objects */
         @Override
         public void draw(Graphics g, int x, int y, int object) {
-            switch (object) {
-            case Nave.TAREA:
-                drawGarb(g, x, y, TAREA);
-				break;
-			case Nave.TAREA_COMPLETADA:
-				drawGarb(g, x, y, TAREA_COMPLETADA);
-                break;
+			switch (object) {
+				case Nave.TAREA:
+					drawTarea(g, x, y, Nave.TAREA);
+					break;
+				case Nave.TAREA_COMPLETADA:
+					drawTarea(g, x, y, Nave.TAREA_COMPLETADA);
+					break;
             }
         }
 
@@ -206,13 +245,10 @@ public class Nave extends Environment {
             String label = "R"+(id+1);
             c = Color.blue;
             if (id == 0) {
-                c = Color.yellow;
-               /* if (((NaveModel)model).r1HasGarb) {
-                    label += " - G";
-                    c = Color.orange;
-                }*/
-				
-            }
+                c = Color.yellow;				
+            }else{
+				c = Color.black;
+			}
             super.drawAgent(g, x, y, c, -1);
             if (id == 0) {
                 g.setColor(Color.black);
@@ -223,10 +259,9 @@ public class Nave extends Environment {
             repaint();
         }
 
-        public void drawGarb(Graphics g, int x, int y, int estado_tarea) {
+        public void drawTarea(Graphics g, int x, int y, int estado_tarea) {
 			
-
-			if(estado_tarea==TAREA){
+			if(estado_tarea==Nave.TAREA){
 				g.setColor(Color.red);
 				g.fillOval(x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8);
 
@@ -234,7 +269,6 @@ public class Nave extends Environment {
 				g.setColor(Color.green);
 				g.fillOval(x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8);
 			}
-			//super.drawObstacle(g, x, y);
             
         }
 

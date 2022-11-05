@@ -5,5 +5,5 @@ MAS mars {
 
     environment: Nave
 
-    agents: r1; r2;
+    agents: r1;r2;
 }
