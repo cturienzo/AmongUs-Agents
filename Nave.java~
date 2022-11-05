@@ -12,7 +12,7 @@ import java.util.logging.Logger;
 
 public class Nave extends Environment {
 
-    public static final int GSize = 10; // tamaño grid
+    public static final int GSize = 16; // tamaño grid
     public static final int TAREA = 16; // codigo tarea sin realizar
 	public static final int TAREA_COMPLETADA  = 32; // codigo tarea completada
 
@@ -20,7 +20,7 @@ public class Nave extends Environment {
     public static final Term ns = Literal.parseLiteral("next(slot)");
 	
 	public static final Term rt = Literal.parseLiteral("realizar_tarea(tarea)");
-	public static final Term st = Literal.parseLiteral("sabotear_tarea(tarea)");
+	public static final Term st = Literal.parseLiteral("sabotear(tarea_completada)");
 
 
     public static final Literal g1 = Literal.parseLiteral("tarea(r1)");
@@ -47,12 +47,12 @@ public class Nave extends Environment {
                 model.nextSlot();
             } else if (action.getFunctor().equals("move_towards")) {
                 int x = (int)((NumberTerm)action.getTerm(0)).solve();
-                int y = (int)((NumberTerm)action.getTerm(1)).solve();
+                int y = (int)((NumberTerm)action.getTerm(0)).solve();
                 model.moveTowards(x,y);
             } else if (action.equals(rt)) {
                 model.realizar_tarea();      
             }else if (action.equals(st)) {
-                model.sabotear_tarea();
+                model.sabotear();
             }else {
                 return false;
             }
@@ -85,12 +85,7 @@ public class Nave extends Environment {
         if (model.hasObject(TAREA, r1Loc)) {
             addPercept("r1",g1);
         }
-		if (model.hasObject(TAREA_COMPLETADA, r1Loc)) {
-            addPercept("r1",g2);
-        }
-		if (model.hasObject(TAREA, r2Loc)) {
-            addPercept("r2",g1);
-        }
+	
 		if (model.hasObject(TAREA_COMPLETADA, r2Loc)) {
             addPercept("r2",g2);
         }
@@ -108,11 +103,17 @@ public class Nave extends Environment {
 
         private NaveModel() {
             super(GSize, GSize, 2);
-
+		
             // initial location of agents
             try {
-                setAgPos(0, 5, 0);
-				setAgPos(1, 0, 0);
+				int x1 = random.nextInt(GSize);
+				int y1 = random.nextInt(GSize);
+				
+				int x2 = random.nextInt(GSize);
+				int y2 = random.nextInt(GSize);
+				
+                setAgPos(0, x1, y1);
+				setAgPos(1, x2, y2);
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -141,15 +142,18 @@ public class Nave extends Environment {
         void nextSlot() throws Exception {
             Location r1 = getAgPos(0);
 			Location r2 = getAgPos(1);
-            r1.x++;
+			
+            r1.x ++;
 			r2.x++;
+
             if (r1.x == getWidth()) {
                 r1.x = 0;
                 r1.y++;
             }
             // finished searching the whole grid
             if (r1.y == getHeight()) {
-                return;
+                r1.y = 0;
+                r1.x++;
             }
 			 if (r2.x == getWidth()) {
                 r2.x = 0;
@@ -157,7 +161,8 @@ public class Nave extends Environment {
             }
             // finished searching the whole grid
             if (r2.y == getHeight()) {
-                return;
+                r2.y = 0;
+                r2.x++;
             }
             setAgPos(0, r1);
 			setAgPos(1, r2);
@@ -182,21 +187,21 @@ public class Nave extends Environment {
             // hay una tarea en la posicion del agente 0
             if (model.hasObject(TAREA, getAgPos(0))) {
                 // la realizacion de la tarea puede fallar
-                if (random.nextBoolean() || nerr == MErr) {
+                if (true) {
                     remove(TAREA, getAgPos(0));
 				    add(TAREA_COMPLETADA, getAgPos(0));
 					logger.info("Tarea completada");
                     nerr = 0;
                 } else {
-					logger.info("Ha fallado la realización de la tarea");
+					logger.info("Ha fallado la realizacion de la tarea");
 					logger.info("Volviendo a intentar la tarea");
                     nerr++;
                 }
             }
         }
 		
-		void sabotear_tarea() {
-			logger.info("saboteo tarea en: " + getAgPos(1));
+		void sabotear() {
+			logger.info("saboteo en: " + getAgPos(1));
             // hay una tarea en la posicion del agente 1
             if (model.hasObject(TAREA_COMPLETADA, getAgPos(1))) {
                 // la realizacion del sabotaje puede fallar
@@ -205,7 +210,7 @@ public class Nave extends Environment {
 				    add(TAREA, getAgPos(1));
 					logger.info("Sabotaje completado");
                 } else {
-					logger.info("Ha fallado la realizaci�n del sabotaje");
+					logger.info("Ha fallado la realizaci�n del sabotaje");
 					logger.info("Volviendo a intentar el sabotaje");
                 }
             }

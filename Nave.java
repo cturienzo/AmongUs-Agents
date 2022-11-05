@@ -15,13 +15,16 @@ public class Nave extends Environment {
     public static final int GSize = 10; // tamaÃ±o grid
     public static final int TAREA = 16; // codigo tarea sin realizar
 	public static final int TAREA_COMPLETADA  = 32; // codigo tarea completada
-
-
+	
+	public static final int OXIGENO  = 64; // codigo tarea completada
+	public static final int REACTOR  = 128; // codigo tarea completada
+	public static final int OXIGENO_SABOTEADO  = 256; // codigo tarea completada
+	
     public static final Term ns = Literal.parseLiteral("next(slot)");
 	
 	public static final Term rt = Literal.parseLiteral("realizar_tarea(tarea)");
-	public static final Term st = Literal.parseLiteral("sabotear(tarea)");
-
+	public static final Term st = Literal.parseLiteral("sabotear(tarea_completada)");
+	public static final Term so = Literal.parseLiteral("sabotear_oxigeno(oxigeno)");
 
     public static final Literal g1 = Literal.parseLiteral("tarea(r1)");
     public static final Literal g2 = Literal.parseLiteral("tarea_completada(r2)");
@@ -30,7 +33,13 @@ public class Nave extends Environment {
 
     private NaveModel model;
     private NaveView view;
-
+	
+	public int pos_x_ox = 0;
+	public int pos_y_ox = 0;
+	
+	public int pos_x_re = 0;
+	public int pos_y_re = 0; 
+	
     @Override
     public void init(String[] args) {
         model = new NaveModel();
@@ -53,6 +62,8 @@ public class Nave extends Environment {
                 model.realizar_tarea();      
             }else if (action.equals(st)) {
                 model.sabotear();
+            }else if (action.equals(so)) {
+                model.sabotear_oxigeno();
             }else {
                 return false;
             }
@@ -118,9 +129,25 @@ public class Nave extends Environment {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
+	
+			
             // crear n_tareas
 			crearTareas(8);
+			 int x_ox = random.nextInt(GSize);
+			 int y_ox = random.nextInt(GSize);
+			 
+			 pos_x_ox = x_ox;
+			 pos_y_ox = y_ox;
+
+	
+			 int x_re = random.nextInt(GSize);
+			 int y_re = random.nextInt(GSize);
+			 
+			 pos_x_re = x_re;
+			 pos_y_re = y_re;
+			 
+			add(OXIGENO, pos_x_ox, pos_y_ox);
+			add(REACTOR, pos_x_re, pos_y_re);
         }
 		
 		void crearTareas(int n_tareas) {
@@ -210,10 +237,23 @@ public class Nave extends Environment {
 				    add(TAREA, getAgPos(1));
 					logger.info("Sabotaje completado");
                 } else {
-					logger.info("Ha fallado la realización del sabotaje");
+					logger.info("Ha fallado la realizaciï¿½n del sabotaje");
 					logger.info("Volviendo a intentar el sabotaje");
                 }
             }
+        }
+		
+	void sabotear_oxigeno() {
+			logger.info("saboteo en OXIGENO ");
+                if (true) {
+                    remove(OXIGENO, pos_x_ox, pos_y_ox);
+					add(OXIGENO_SABOTEADO, pos_x_ox, pos_y_ox);
+					logger.info("OXIGENO SABOTEADO");
+                } else {
+					logger.info("Ha fallado la realizaciï¿½n del sabotaje");
+					logger.info("Volviendo a intentar el sabotaje");
+                }
+            
         }
 
     }
@@ -236,6 +276,15 @@ public class Nave extends Environment {
 					break;
 				case Nave.TAREA_COMPLETADA:
 					drawTarea(g, x, y, Nave.TAREA_COMPLETADA);
+					break;
+				case Nave.OXIGENO:
+					drawTarea(g, x, y, Nave.OXIGENO);
+					break;
+				case Nave.REACTOR:
+					drawTarea(g, x, y, Nave.REACTOR);
+					break;
+				case Nave.OXIGENO_SABOTEADO:
+					drawTarea(g, x, y, Nave.OXIGENO_SABOTEADO);
 					break;
             }
         }
@@ -265,10 +314,34 @@ public class Nave extends Environment {
 				g.setColor(Color.red);
 				g.fillOval(x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8);
 
-			}else{
+			}else if (estado_tarea == Nave.TAREA_COMPLETADA){
 				g.setColor(Color.green);
 				g.fillOval(x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8);
+			}else if (estado_tarea == Nave.OXIGENO){
+				g.setColor(Color.blue);
+				g.fillOval(x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8);
+				
+				g.setColor(Color.white);
+				String label = "OX";
+				super.drawString(g, x, y, defaultFont, label);
 			}
+			else if (estado_tarea == Nave.REACTOR){
+				g.setColor(Color.orange);
+				g.fillOval(x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8);
+				
+				g.setColor(Color.white);
+				String label = "R";
+				super.drawString(g, x, y, defaultFont, label);
+			}
+			else if (estado_tarea == Nave.OXIGENO_SABOTEADO){
+				g.setColor(Color.red);
+				g.fillOval(x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8);
+				
+				g.setColor(Color.white);
+				String label = "OX";
+				super.drawString(g, x, y, defaultFont, label);
+			}
+				
             
         }
 

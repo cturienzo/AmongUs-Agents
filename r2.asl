@@ -13,7 +13,9 @@ at(P) :- pos(P,X,Y) & pos(r2,X,Y).
    <- next(slot);
       !check(slots).
 
-+!check(slots): tarea_completada(r2)
-	<- sabotear(tarea); next(slot);
-		!check(slots).
++!check(slots) : tarea_completada(r2)
+   <- sabotear_oxigeno(oxigeno);next(slot);
+      !check(slots).
+
+
 
