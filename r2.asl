@@ -9,12 +9,13 @@ at(P) :- pos(P,X,Y) & pos(r2,X,Y).
 !check(slots).
 
 /* Plans */
-+!check(slots) : not tarea_completada(r2)
-   <- next(slot);
++!check(slots)<- next_imp(slot);
       !check(slots).
 
-+!check(slots) : tarea_completada(r2)
-   <- sabotear_oxigeno(oxigeno);next(slot);
++intencion_sabotear_ox(r2)<- sabotear_oxigeno(oxigeno);next_imp(slot);
+      !check(slots).
+	  
++intencion_sabotear_re(r2)<- sabotear_reactor(reactor);next_imp(slot);
       !check(slots).
 
 

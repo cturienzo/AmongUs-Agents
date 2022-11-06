@@ -12,22 +12,40 @@ import java.util.logging.Logger;
 
 public class Nave extends Environment {
 
-    public static final int GSize = 10; // tamaño grid
+    public static final int GSize = 16; // tamaño grid
     public static final int TAREA = 16; // codigo tarea sin realizar
 	public static final int TAREA_COMPLETADA  = 32; // codigo tarea completada
 	
 	public static final int OXIGENO  = 64; // codigo tarea completada
 	public static final int REACTOR  = 128; // codigo tarea completada
 	public static final int OXIGENO_SABOTEADO  = 256; // codigo tarea completada
+	public static final int REACTOR_SABOTEADO  = 512; // codigo tarea completada
+
 	
-    public static final Term ns = Literal.parseLiteral("next(slot)");
+    public static final Term ns_crew = Literal.parseLiteral("next_crew(slot)");
+	public static final Term ns_imp = Literal.parseLiteral("next_imp(slot)");
+
 	
 	public static final Term rt = Literal.parseLiteral("realizar_tarea(tarea)");
 	public static final Term st = Literal.parseLiteral("sabotear(tarea_completada)");
+	
 	public static final Term so = Literal.parseLiteral("sabotear_oxigeno(oxigeno)");
+	public static final Term ao = Literal.parseLiteral("arreglar_oxigeno(oxigeno)");
+	
+	public static final Term sr = Literal.parseLiteral("sabotear_reactor(reactor)");
+	public static final Term ar = Literal.parseLiteral("arreglar_reactor(reactor)");
+
 
     public static final Literal g1 = Literal.parseLiteral("tarea(r1)");
     public static final Literal g2 = Literal.parseLiteral("tarea_completada(r2)");
+	
+	public static final Literal int_sab_ox = Literal.parseLiteral("intencion_sabotear_ox(r2)");
+	public static final Literal int_sab_re = Literal.parseLiteral("intencion_sabotear_re(r2)");
+
+
+	public static final Literal ox_sab = Literal.parseLiteral("oxigeno_saboteado(pos_ox)");
+	public static final Literal re_sab = Literal.parseLiteral("reactor_saboteado(pos_re)");
+
 
     static Logger logger = Logger.getLogger(Nave.class.getName());
 
@@ -52,11 +70,13 @@ public class Nave extends Environment {
     public boolean executeAction(String ag, Structure action) {
         logger.info(ag+" doing: "+ action);
         try {
-            if (action.equals(ns)) {
-                model.nextSlot();
+            if (action.equals(ns_crew)) {
+                model.nextSlot_crewmate();
+			}else if(action.equals(ns_imp)){
+				model.nextSlot_impostor();
             } else if (action.getFunctor().equals("move_towards")) {
                 int x = (int)((NumberTerm)action.getTerm(0)).solve();
-                int y = (int)((NumberTerm)action.getTerm(0)).solve();
+                int y = (int)((NumberTerm)action.getTerm(1)).solve();
                 model.moveTowards(x,y);
             } else if (action.equals(rt)) {
                 model.realizar_tarea();      
@@ -64,6 +84,12 @@ public class Nave extends Environment {
                 model.sabotear();
             }else if (action.equals(so)) {
                 model.sabotear_oxigeno();
+            }else if (action.equals(ao)) {
+                model.arreglar_oxigeno();
+            }else if (action.equals(sr)) {
+                model.sabotear_reactor();
+            }else if (action.equals(ar)) {
+                model.arreglar_reactor();
             }else {
                 return false;
             }
@@ -83,22 +109,60 @@ public class Nave extends Environment {
     /** creates the agents perception based on the NaveModel */
     void updatePercepts() {
         clearPercepts();
-
+		
+		Random random = new Random(System.currentTimeMillis());
+		
         Location r1Loc = model.getAgPos(0);
 		Location r2Loc = model.getAgPos(1);
 
         Literal pos1 = Literal.parseLiteral("pos(r1," + r1Loc.x + "," + r1Loc.y + ")");
 		Literal pos2 = Literal.parseLiteral("pos(r2," + r2Loc.x + "," + r2Loc.y + ")");
+		Literal pos_ox = Literal.parseLiteral("pos(ox," + pos_x_ox + "," + pos_y_ox + ")");
+		Literal pos_re = Literal.parseLiteral("pos(re," + pos_x_re + "," + pos_y_re + ")");
+
+
 
         addPercept("r1",pos1);
 		addPercept("r2",pos2);
+		addPercept(pos_ox);
+		addPercept(pos_re);
+
 
         if (model.hasObject(TAREA, r1Loc)) {
             addPercept("r1",g1);
         }
-	
-		if (model.hasObject(TAREA_COMPLETADA, r2Loc)) {
-            addPercept("r2",g2);
+		if (model.hasObject(TAREA_COMPLETADA, r1Loc)) {
+            removePercept("r1",g1);
+        }
+		
+		
+		int realizarSabotaje_ox = random.nextInt(100);
+		int realizarSabotaje_re = random.nextInt(1000);
+
+		logger.info("El valor de realizarSabotaje de oxigeno es: " + realizarSabotaje_ox);
+		logger.info("El valor de realizarSabotaje de reactor es: " + realizarSabotaje_re);
+
+		boolean oxigeno_saboteado = model.hasObject(OXIGENO_SABOTEADO, pos_x_ox, pos_y_ox);
+		boolean reactor_saboteado = model.hasObject(REACTOR_SABOTEADO, pos_x_re, pos_y_re);
+		
+		if (realizarSabotaje_ox<10 && !oxigeno_saboteado && !reactor_saboteado) {
+            addPercept("r2",int_sab_ox);
+			oxigeno_saboteado = true;
+        }
+		if (oxigeno_saboteado) {
+			logger.info("Soy r1 y tengo la percepción de oxígeno saboteado");
+            addPercept("r1",ox_sab);
+        }
+		
+		if (realizarSabotaje_re<10 && !oxigeno_saboteado && !reactor_saboteado) {
+            addPercept("r2",int_sab_re);
+			reactor_saboteado = true;
+        }
+		
+		
+		if (reactor_saboteado) {
+			logger.info("Soy r1 y tengo la percepción de reactor saboteado");
+            addPercept("r1",re_sab);
         }
 		
 		
@@ -166,13 +230,9 @@ public class Nave extends Environment {
 			}
 		}
 
-        void nextSlot() throws Exception {
+        void nextSlot_crewmate() throws Exception {
             Location r1 = getAgPos(0);
-			Location r2 = getAgPos(1);
-			
             r1.x ++;
-			r2.x++;
-
             if (r1.x == getWidth()) {
                 r1.x = 0;
                 r1.y++;
@@ -182,7 +242,16 @@ public class Nave extends Environment {
                 r1.y = 0;
                 r1.x++;
             }
-			 if (r2.x == getWidth()) {
+			
+            setAgPos(0, r1);
+        }
+		
+		void nextSlot_impostor() throws Exception {
+			Location r2 = getAgPos(1);
+			
+			r2.x++;
+
+        		if (r2.x == getWidth()) {
                 r2.x = 0;
                 r2.y++;
             }
@@ -191,7 +260,6 @@ public class Nave extends Environment {
                 r2.y = 0;
                 r2.x++;
             }
-            setAgPos(0, r1);
 			setAgPos(1, r2);
         }
 		
@@ -227,21 +295,21 @@ public class Nave extends Environment {
             }
         }
 		
-		void sabotear() {
-			logger.info("saboteo en: " + getAgPos(1));
-            // hay una tarea en la posicion del agente 1
-            if (model.hasObject(TAREA_COMPLETADA, getAgPos(1))) {
-                // la realizacion del sabotaje puede fallar
-                if (true) {
-                    remove(TAREA_COMPLETADA, getAgPos(1));
-				    add(TAREA, getAgPos(1));
-					logger.info("Sabotaje completado");
-                } else {
-					logger.info("Ha fallado la realizaci�n del sabotaje");
-					logger.info("Volviendo a intentar el sabotaje");
-                }
-            }
-        }
+	void sabotear() {
+		logger.info("saboteo en: " + getAgPos(1));
+		// hay una tarea en la posicion del agente 1
+		if (model.hasObject(TAREA_COMPLETADA, getAgPos(1))) {
+			// la realizacion del sabotaje puede fallar
+			if (true) {
+				remove(TAREA_COMPLETADA, getAgPos(1));
+				add(TAREA, getAgPos(1));
+				logger.info("Sabotaje completado");
+			} else {
+				logger.info("Ha fallado la realizaci�n del sabotaje");
+				logger.info("Volviendo a intentar el sabotaje");
+			}
+		}
+	}
 		
 	void sabotear_oxigeno() {
 			logger.info("saboteo en OXIGENO ");
@@ -255,8 +323,48 @@ public class Nave extends Environment {
                 }
             
         }
+			void arreglar_oxigeno() {
+			if (model.hasObject(OXIGENO_SABOTEADO, pos_x_ox, pos_y_ox)) {
+				// la realizacion del sabotaje puede fallar
+				if (true) {
+					remove(OXIGENO_SABOTEADO, pos_x_ox, pos_y_ox);
+					add(OXIGENO, pos_x_ox, pos_y_ox);
+					logger.info("Oxigeno arreglado");
+				} else {
+					logger.info("Ha fallado el arreglo del oxigeno");
+					logger.info("Volviendo a intentar arreglar oxigeno");
+				}
+			}
+		}
+		
+		void sabotear_reactor() {
+			logger.info("saboteo en REACTOR ");
+                if (true) {
+                    remove(REACTOR, pos_x_re, pos_y_re);
+					add(REACTOR_SABOTEADO, pos_x_re, pos_y_re);
+					logger.info("REACTOR SABOTEADO");
+                } else {
+					logger.info("Ha fallado la realizacion del sabotaje");
+					logger.info("Volviendo a intentar el sabotaje");
+                }
+            
+        }
+			void arreglar_reactor() {
+			if (model.hasObject(REACTOR_SABOTEADO, pos_x_re, pos_y_re)) {
+				// la realizacion del sabotaje puede fallar
+				if (true) {
+					remove(REACTOR_SABOTEADO, pos_x_re, pos_y_re);
+					add(REACTOR, pos_x_re, pos_y_re);
+					logger.info("Reactor arreglado");
+				} else {
+					logger.info("Ha fallado el arreglo del reactor");
+					logger.info("Volviendo a intentar arreglar reactor");
+				}
+			}
+		}
 
     }
+	
 
     class NaveView extends GridWorldView {
 
@@ -285,6 +393,9 @@ public class Nave extends Environment {
 					break;
 				case Nave.OXIGENO_SABOTEADO:
 					drawTarea(g, x, y, Nave.OXIGENO_SABOTEADO);
+					break;
+				case Nave.REACTOR_SABOTEADO:
+					drawTarea(g, x, y, Nave.REACTOR_SABOTEADO);
 					break;
             }
         }
@@ -339,6 +450,14 @@ public class Nave extends Environment {
 				
 				g.setColor(Color.white);
 				String label = "OX";
+				super.drawString(g, x, y, defaultFont, label);
+			}
+			else if (estado_tarea == Nave.REACTOR_SABOTEADO){
+				g.setColor(Color.red);
+				g.fillOval(x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8);
+				
+				g.setColor(Color.white);
+				String label = "R";
 				super.drawString(g, x, y, defaultFont, label);
 			}
 				

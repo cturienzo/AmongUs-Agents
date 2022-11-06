@@ -4,6 +4,7 @@
 
 at(P) :- pos(P,X,Y) & pos(r1,X,Y).
 
+
 /* Initial goal */
 
 !check(slots).
@@ -12,23 +13,32 @@ at(P) :- pos(P,X,Y) & pos(r1,X,Y).
 
 // desplazarse
 +!check(slots) : not tarea(r1)
-   <- next(slot);
+   <- next_crew(slot);
       !check(slots).
 
 +!check(slots): tarea(r1)
 	<- realizar_tarea(tarea);
 		!check(slots).
+		
++oxigeno_saboteado(pos_ox)
+	<- !at(ox);
+	   arreglar_oxigeno(oxigeno);
+	   !check(slots).
+	   
 
-/*
-// hacer tarea
-+tarea(r1)<- realizar_tarea(tarea);
-              !check(slots).
-			  */
-//!check(slots).
-/*
-+tarea_completada(r1) <- next(slot); !check(slots).
-!check(slots).
-*/
++reactor_saboteado(pos_re)
+	<- !at(re);
+	   arreglar_reactor(reactor);
+	   !check(slots).
+	   
+
++!at(L) : at(L).
++!at(L) <- ?pos(L,X,Y);
+           move_towards(X,Y);
+           !at(L).
+		
+
+
 /*
 @lg[atomic]
 +garbage(r1) : not .desire(carry_to(r2))
