@@ -58,6 +58,8 @@ public class Nave extends Environment {
 	public int pos_x_re = 0;
 	public int pos_y_re = 0; 
 	
+	public int num_sabotajes_ox = 1; 
+	public int num_sabotajes_re = 1; 
     @Override
     public void init(String[] args) {
         model = new NaveModel();
@@ -69,7 +71,9 @@ public class Nave extends Environment {
     @Override
     public boolean executeAction(String ag, Structure action) {
         logger.info(ag+" doing: "+ action);
+		
         try {
+			Thread.sleep(1000);
             if (action.equals(ns_crew)) {
                 model.nextSlot_crewmate();
 			}else if(action.equals(ns_imp)){
@@ -108,7 +112,7 @@ public class Nave extends Environment {
 
     /** creates the agents perception based on the NaveModel */
     void updatePercepts() {
-        clearPercepts();
+        clearPercepts();                                                
 		
 		Random random = new Random(System.currentTimeMillis());
 		
@@ -137,7 +141,7 @@ public class Nave extends Environment {
 		
 		
 		int realizarSabotaje_ox = random.nextInt(100);
-		int realizarSabotaje_re = random.nextInt(1000);
+		int realizarSabotaje_re = random.nextInt(100);
 
 		logger.info("El valor de realizarSabotaje de oxigeno es: " + realizarSabotaje_ox);
 		logger.info("El valor de realizarSabotaje de reactor es: " + realizarSabotaje_re);
@@ -145,24 +149,36 @@ public class Nave extends Environment {
 		boolean oxigeno_saboteado = model.hasObject(OXIGENO_SABOTEADO, pos_x_ox, pos_y_ox);
 		boolean reactor_saboteado = model.hasObject(REACTOR_SABOTEADO, pos_x_re, pos_y_re);
 		
-		if (realizarSabotaje_ox<10 && !oxigeno_saboteado && !reactor_saboteado) {
+		if (realizarSabotaje_ox<10 && !oxigeno_saboteado && !reactor_saboteado && num_sabotajes_ox > 0) {
             addPercept("r2",int_sab_ox);
 			oxigeno_saboteado = true;
+			num_sabotajes_ox--;
+			logger.info("me quedan: " + num_sabotajes_ox + " de oxigeno");
+			
         }
 		if (oxigeno_saboteado) {
 			logger.info("Soy r1 y tengo la percepción de oxígeno saboteado");
             addPercept("r1",ox_sab);
         }
-		
-		if (realizarSabotaje_re<10 && !oxigeno_saboteado && !reactor_saboteado) {
-            addPercept("r2",int_sab_re);
-			reactor_saboteado = true;
+		if (model.hasObject(OXIGENO, r1Loc) && model.hasObject(OXIGENO, pos_x_ox, pos_y_ox)){
+			logger.info("Soy r1 y ya no tengo la percepción de oxígeno saboteado");
+            removePercept("r1",ox_sab);
         }
 		
+		if (realizarSabotaje_re<10 && !oxigeno_saboteado && !reactor_saboteado && num_sabotajes_re > 0) {
+            addPercept("r2",int_sab_re);
+			reactor_saboteado = true;
+			num_sabotajes_re--;
+			logger.info("me quedan: " + num_sabotajes_re + " de reactor");
+        }
 		
 		if (reactor_saboteado) {
 			logger.info("Soy r1 y tengo la percepción de reactor saboteado");
             addPercept("r1",re_sab);
+        }
+		if (model.hasObject(REACTOR, r1Loc) && model.hasObject(REACTOR, pos_x_re, pos_y_re)) {
+			logger.info("Soy r1 y ya no tengo la percepción de reactor saboteado");
+            removePercept("r1",re_sab);
         }
 		
 		

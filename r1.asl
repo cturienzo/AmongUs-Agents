@@ -12,11 +12,11 @@ at(P) :- pos(P,X,Y) & pos(r1,X,Y).
 /* Plans */
 
 // desplazarse
-+!check(slots) : not tarea(r1)
++!check(slots) : not tarea(r1) & not oxigeno_saboteado(pos_ox) & not reactor_saboteado(pos_re)
    <- next_crew(slot);
       !check(slots).
 
-+!check(slots): tarea(r1)
++!check(slots): tarea(r1) & not oxigeno_saboteado(pos_ox) & not reactor_saboteado(pos_re)
 	<- realizar_tarea(tarea);
 		!check(slots).
 		
@@ -25,7 +25,7 @@ at(P) :- pos(P,X,Y) & pos(r1,X,Y).
 	   arreglar_oxigeno(oxigeno);
 	   !check(slots).
 	   
-
+	   
 +reactor_saboteado(pos_re)
 	<- !at(re);
 	   arreglar_reactor(reactor);
