@@ -39,6 +39,9 @@ public class Nave extends Environment {
     public static final Literal g1 = Literal.parseLiteral("tarea(r1)");
     public static final Literal g2 = Literal.parseLiteral("tarea_completada(r2)");
 	
+	public static final Literal task_assign = Literal.parseLiteral("know_next_task(r2)");
+
+	
 	public static final Literal int_sab_ox = Literal.parseLiteral("intencion_sabotear_ox(r2)");
 	public static final Literal int_sab_re = Literal.parseLiteral("intencion_sabotear_re(r2)");
 
@@ -58,6 +61,10 @@ public class Nave extends Environment {
 	public int pos_x_re = 0;
 	public int pos_y_re = 0; 
 	
+	public int num_sabotajes_ox = 1; 
+	public int num_sabotajes_re = 1; 
+	
+	
     @Override
     public void init(String[] args) {
         model = new NaveModel();
@@ -69,7 +76,9 @@ public class Nave extends Environment {
     @Override
     public boolean executeAction(String ag, Structure action) {
         logger.info(ag+" doing: "+ action);
+		
         try {
+			Thread.sleep(1000);
             if (action.equals(ns_crew)) {
                 model.nextSlot_crewmate();
 			}else if(action.equals(ns_imp)){
@@ -108,22 +117,30 @@ public class Nave extends Environment {
 
     /** creates the agents perception based on the NaveModel */
     void updatePercepts() {
-        clearPercepts();
+        clearPercepts();                                                
 		
 		Random random = new Random(System.currentTimeMillis());
 		
         Location r1Loc = model.getAgPos(0);
 		Location r2Loc = model.getAgPos(1);
+		
+	
+		Location nearest_Task = model.encontrarTarea();
+		
+
 
         Literal pos1 = Literal.parseLiteral("pos(r1," + r1Loc.x + "," + r1Loc.y + ")");
 		Literal pos2 = Literal.parseLiteral("pos(r2," + r2Loc.x + "," + r2Loc.y + ")");
 		Literal pos_ox = Literal.parseLiteral("pos(ox," + pos_x_ox + "," + pos_y_ox + ")");
 		Literal pos_re = Literal.parseLiteral("pos(re," + pos_x_re + "," + pos_y_re + ")");
+		Literal nt = Literal.parseLiteral("pos(nearest_task," + nearest_Task.x  + "," + nearest_Task.y + ")");
 
+		
 
 
         addPercept("r1",pos1);
 		addPercept("r2",pos2);
+		addPercept("r1", nt);
 		addPercept(pos_ox);
 		addPercept(pos_re);
 
@@ -137,32 +154,51 @@ public class Nave extends Environment {
 		
 		
 		int realizarSabotaje_ox = random.nextInt(100);
-		int realizarSabotaje_re = random.nextInt(1000);
+		int realizarSabotaje_re = random.nextInt(100);
 
 		logger.info("El valor de realizarSabotaje de oxigeno es: " + realizarSabotaje_ox);
 		logger.info("El valor de realizarSabotaje de reactor es: " + realizarSabotaje_re);
 
 		boolean oxigeno_saboteado = model.hasObject(OXIGENO_SABOTEADO, pos_x_ox, pos_y_ox);
 		boolean reactor_saboteado = model.hasObject(REACTOR_SABOTEADO, pos_x_re, pos_y_re);
+
+		if (model.hasObject(TAREA, nearest_Task.x, nearest_Task.y)){
+			addPercept("r1",task_assign);
+		}
+		if (model.hasObject(TAREA_COMPLETADA, nearest_Task.x, nearest_Task.y)){
+			removePercept("r1",task_assign);
+		} 
 		
-		if (realizarSabotaje_ox<10 && !oxigeno_saboteado && !reactor_saboteado) {
+		if (realizarSabotaje_ox<10 && !oxigeno_saboteado && !reactor_saboteado && num_sabotajes_ox > 0) {
             addPercept("r2",int_sab_ox);
 			oxigeno_saboteado = true;
+			num_sabotajes_ox--;
+			logger.info("me quedan: " + num_sabotajes_ox + " de oxigeno");
+			
         }
 		if (oxigeno_saboteado) {
 			logger.info("Soy r1 y tengo la percepción de oxígeno saboteado");
             addPercept("r1",ox_sab);
         }
-		
-		if (realizarSabotaje_re<10 && !oxigeno_saboteado && !reactor_saboteado) {
-            addPercept("r2",int_sab_re);
-			reactor_saboteado = true;
+		if (model.hasObject(OXIGENO, r1Loc) && model.hasObject(OXIGENO, pos_x_ox, pos_y_ox)){
+			logger.info("Soy r1 y ya no tengo la percepción de oxígeno saboteado");
+            removePercept("r1",ox_sab);
         }
 		
+		if (realizarSabotaje_re<10 && !oxigeno_saboteado && !reactor_saboteado && num_sabotajes_re > 0) {
+            addPercept("r2",int_sab_re);
+			reactor_saboteado = true;
+			num_sabotajes_re--;
+			logger.info("me quedan: " + num_sabotajes_re + " de reactor");
+        }
 		
 		if (reactor_saboteado) {
 			logger.info("Soy r1 y tengo la percepción de reactor saboteado");
             addPercept("r1",re_sab);
+        }
+		if (model.hasObject(REACTOR, r1Loc) && model.hasObject(REACTOR, pos_x_re, pos_y_re)) {
+			logger.info("Soy r1 y ya no tengo la percepción de reactor saboteado");
+            removePercept("r1",re_sab);
         }
 		
 		
@@ -362,6 +398,34 @@ public class Nave extends Environment {
 				}
 			}
 		}
+		double distance (int x1, int y1, int x2, int y2) {
+            double x = Math.pow(x2 - x1, 2);
+            double y = Math.pow(y2 - y1, 2);
+            return Math.sqrt(x+y);
+        }
+
+        Location encontrarTarea() {
+			
+            Location r1 = getAgPos(0);
+            int [][] nave = model.data;
+            int [] nearestTask = {0,0};
+            double nearestDistance = 9999;
+            double dist;
+            for (int i = 0; i < nave.length; i++){
+                for (int j = 0; j < nave[i].length; j++){
+                    if (nave[i][j] == TAREA) {
+                        dist = distance(r1.x, r1.y, i, j);
+                        if (dist < nearestDistance) {
+                            nearestDistance = dist;
+                            nearestTask[0] = i;
+                            nearestTask[1] = j;
+                        }
+                    }
+                }
+            }
+
+            return new Location(nearestTask[0], nearestTask[1]);
+        }
 
     }
 	

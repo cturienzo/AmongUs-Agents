@@ -7,30 +7,41 @@ at(P) :- pos(P,X,Y) & pos(r1,X,Y).
 
 /* Initial goal */
 
-!check(slots).
+//!check(slots).
+!know_next_task(r2).
 
 /* Plans */
 
 // desplazarse
-+!check(slots) : not tarea(r1) & not oxigeno_saboteado(pos_ox) & not reactor_saboteado(pos_re)
+/*+!check(slots) : not tarea(r1) & not oxigeno_saboteado(pos_ox) & not reactor_saboteado(pos_re)
    <- next_crew(slot);
       !check(slots).
 
 +!check(slots): tarea(r1) & not oxigeno_saboteado(pos_ox) & not reactor_saboteado(pos_re)
 	<- realizar_tarea(tarea);
 		!check(slots).
-		
+		*/
++!know_next_task(r2): tarea(r1) & not oxigeno_saboteado(pos_ox) & not reactor_saboteado(pos_re)
+	<- realizar_tarea(tarea);
+	   !know_next_task(r2).
+	   
++!know_next_task(r2)
+	<- !at(nearest_task);
+	   !know_next_task(r2).
+	   
+	   
 +oxigeno_saboteado(pos_ox)
 	<- !at(ox);
 	   arreglar_oxigeno(oxigeno);
-	   !check(slots).
+	   !know_next_task(r2).
 	   
 	   
 +reactor_saboteado(pos_re)
 	<- !at(re);
 	   arreglar_reactor(reactor);
-	   !check(slots).
+	   !know_next_task(r2).
 	   
+
 
 +!at(L) : at(L).
 +!at(L) <- ?pos(L,X,Y);

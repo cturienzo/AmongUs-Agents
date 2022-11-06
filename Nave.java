@@ -39,6 +39,8 @@ public class Nave extends Environment {
     public static final Literal g1 = Literal.parseLiteral("tarea(r1)");
     public static final Literal g2 = Literal.parseLiteral("tarea_completada(r2)");
 	
+
+	
 	public static final Literal int_sab_ox = Literal.parseLiteral("intencion_sabotear_ox(r2)");
 	public static final Literal int_sab_re = Literal.parseLiteral("intencion_sabotear_re(r2)");
 
@@ -60,6 +62,8 @@ public class Nave extends Environment {
 	
 	public int num_sabotajes_ox = 1; 
 	public int num_sabotajes_re = 1; 
+	
+	
     @Override
     public void init(String[] args) {
         model = new NaveModel();
@@ -118,16 +122,23 @@ public class Nave extends Environment {
 		
         Location r1Loc = model.getAgPos(0);
 		Location r2Loc = model.getAgPos(1);
+		
+	
+		Location nearest_Task = model.encontrarTarea();
+		
 
         Literal pos1 = Literal.parseLiteral("pos(r1," + r1Loc.x + "," + r1Loc.y + ")");
 		Literal pos2 = Literal.parseLiteral("pos(r2," + r2Loc.x + "," + r2Loc.y + ")");
 		Literal pos_ox = Literal.parseLiteral("pos(ox," + pos_x_ox + "," + pos_y_ox + ")");
 		Literal pos_re = Literal.parseLiteral("pos(re," + pos_x_re + "," + pos_y_re + ")");
+		Literal nt = Literal.parseLiteral("pos(nearest_task," + nearest_Task.x  + "," + nearest_Task.y + ")");
 
+		logger.info("Yendo hacia la tarea en posicion: " + nearest_Task);
 
 
         addPercept("r1",pos1);
 		addPercept("r2",pos2);
+		addPercept("r1", nt);
 		addPercept(pos_ox);
 		addPercept(pos_re);
 
@@ -135,9 +146,11 @@ public class Nave extends Environment {
         if (model.hasObject(TAREA, r1Loc)) {
             addPercept("r1",g1);
         }
-		if (model.hasObject(TAREA_COMPLETADA, r1Loc)) {
-            removePercept("r1",g1);
+		
+		 if (model.hasObject(TAREA_COMPLETADA, r1Loc)) {
+            addPercept("r1",g2);
         }
+		
 		
 		
 		int realizarSabotaje_ox = random.nextInt(100);
@@ -148,8 +161,9 @@ public class Nave extends Environment {
 
 		boolean oxigeno_saboteado = model.hasObject(OXIGENO_SABOTEADO, pos_x_ox, pos_y_ox);
 		boolean reactor_saboteado = model.hasObject(REACTOR_SABOTEADO, pos_x_re, pos_y_re);
+
 		
-		if (realizarSabotaje_ox<10 && !oxigeno_saboteado && !reactor_saboteado && num_sabotajes_ox > 0) {
+		if (realizarSabotaje_ox<0 && !oxigeno_saboteado && !reactor_saboteado && num_sabotajes_ox > 0) {
             addPercept("r2",int_sab_ox);
 			oxigeno_saboteado = true;
 			num_sabotajes_ox--;
@@ -165,7 +179,7 @@ public class Nave extends Environment {
             removePercept("r1",ox_sab);
         }
 		
-		if (realizarSabotaje_re<10 && !oxigeno_saboteado && !reactor_saboteado && num_sabotajes_re > 0) {
+		if (realizarSabotaje_re<0 && !oxigeno_saboteado && !reactor_saboteado && num_sabotajes_re > 0) {
             addPercept("r2",int_sab_re);
 			reactor_saboteado = true;
 			num_sabotajes_re--;
@@ -378,6 +392,34 @@ public class Nave extends Environment {
 				}
 			}
 		}
+		double distance (int x1, int y1, int x2, int y2) {
+            double x = Math.pow(x2 - x1, 2);
+            double y = Math.pow(y2 - y1, 2);
+            return Math.sqrt(x+y);
+        }
+
+        Location encontrarTarea() {
+			
+            Location r1 = getAgPos(0);
+            int [][] nave = model.data;
+            int [] nearestTask = {0,0};
+            double nearestDistance = 9999;
+            double dist;
+            for (int i = 0; i < nave.length; i++){
+                for (int j = 0; j < nave[i].length; j++){
+                    if (nave[i][j] == TAREA) {
+                        dist = distance(r1.x, r1.y, i, j);
+                        if (dist < nearestDistance) {
+                            nearestDistance = dist;
+                            nearestTask[0] = i;
+                            nearestTask[1] = j;
+                        }
+                    }
+                }
+            }
+
+            return new Location(nearestTask[0], nearestTask[1]);
+        }
 
     }
 	
