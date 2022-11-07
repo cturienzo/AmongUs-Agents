@@ -13,41 +13,45 @@ at(P) :- pos(P,X,Y) & pos(r1,X,Y).
 /* Plans */
 
 // desplazarse
-/*+!check(slots) : not tarea(r1) & not oxigeno_saboteado(pos_ox) & not reactor_saboteado(pos_re)
+
+/*
++!check(slots) : not tarea(r1) & not oxigeno_saboteado(pos_ox) & not reactor_saboteado(pos_re)
    <- next_crew(slot);
       !check(slots).
 
 +!check(slots): tarea(r1) & not oxigeno_saboteado(pos_ox) & not reactor_saboteado(pos_re)
-	<- realizar_tarea(tarea);
-		!check(slots).
-		*/
-+!know_next_task(r2): tarea(r1) & not oxigeno_saboteado(pos_ox) & not reactor_saboteado(pos_re)
-	<- realizar_tarea(tarea);
-	   !know_next_task(r2).
+    <- realizar_tarea(tarea);
+        !check(slots). */
+
+
++!know_next_task(r2): tarea(r1) & not oxigeno_saboteado(pos_ox) & not  reactor_saboteado(pos_re)
+    <- realizar_tarea(tarea);
+       !know_next_task(r2).
+
++!know_next_task(r2): not tarea(r1) & not oxigeno_saboteado(pos_ox) & not  reactor_saboteado(pos_re)
+    <- !at(nearest_task);
+       !know_next_task(r2).
 	   
-+!know_next_task(r2)
-	<- !at(nearest_task);
-	   !know_next_task(r2).
-	   
-	   
-+oxigeno_saboteado(pos_ox)
-	<- !at(ox);
-	   arreglar_oxigeno(oxigeno);
-	   !know_next_task(r2).
-	   
-	   
-+reactor_saboteado(pos_re)
-	<- !at(re);
-	   arreglar_reactor(reactor);
-	   !know_next_task(r2).
-	   
+
+
++!know_next_task(r2): oxigeno_saboteado(pos_ox)
+    <- !at(ox);
+       arreglar_oxigeno(oxigeno);
+       !know_next_task(r2).
+
+
++!know_next_task(r2): reactor_saboteado(pos_re)
+    <- !at(re);
+       arreglar_reactor(reactor);
+       !know_next_task(r2).
+
 
 
 +!at(L) : at(L).
 +!at(L) <- ?pos(L,X,Y);
            move_towards(X,Y);
            !at(L).
-		
+
 
 
 /*
@@ -75,7 +79,7 @@ at(P) :- pos(P,X,Y) & pos(r1,X,Y).
 +!ensure_pick(S) : garbage(r1)
    <- pick(garb);
       !ensure_pick(S).
-+!ensure_pick(_).
++!ensurepick().
 
 +!at(L) : at(L).
 +!at(L) <- ?pos(L,X,Y);
