@@ -5,11 +5,12 @@ import java.util.logging.Logger;
 import jason.environment.grid.GridWorldModel;
 import jason.environment.grid.Location;
 
+import java.util.ArrayList;
 
 public class NaveModel extends GridWorldModel {
 		
 		public static Logger logger 					= Logger.getLogger(NaveEnv.class.getName());
-	    public static final int GSize 				= 8; // tamaño grid
+	    public static final int GSize 				= 12; // tamaño grid
 		public static final int TAREA 				= 16; // codigo tarea sin realizar
 		public static final int TAREA_COMPLETADA  	= 32; // codigo tarea completada
 		
@@ -22,9 +23,9 @@ public class NaveModel extends GridWorldModel {
         
 		private int nerr; // numero de errores al realizar tarea
 		
-		private Location tarea_mas_cercana;
 		private Location reactor_loc;
 		private Location oxigeno_loc;
+		private ArrayList<Location> tareas_mas_cercanas;
  		
 		private boolean saboteoDisponible;
 		private boolean oxigenoSaboteado;
@@ -43,19 +44,9 @@ public class NaveModel extends GridWorldModel {
 				this.num_tripulantes = num_tripulantes;
 				this.num_impostores = num_impostores;
 				
-				/*
-				int x1 = random.nextInt(GSize);
-				int y1 = random.nextInt(GSize);
-				
-				int x2 = random.nextInt(GSize);
-				int y2 = random.nextInt(GSize);
-				
-                	setAgPos(0, x1, y1);
-				setAgPos(1, x2, y2);
-				*/
-				
-				this.tarea_mas_cercana = new Location((GSize-1)/2,(GSize-1)/2);
-				
+				// iniciamos la tarea mas cercana a un valor distinto de null
+				this.tareas_mas_cercanas = new ArrayList<>();
+								
 				// crear 3 tareas por tripulante
 				crearTareas(this.num_tripulantes*3);
 				
@@ -69,10 +60,28 @@ public class NaveModel extends GridWorldModel {
 				this.oxigenoSaboteado = false;
 				this.reactorSaboteado = false;
 				
+				// asignamos posiciones libres de tareas a los agentes
+				for(int i=0; i < getNbOfAgs(); i++){
+					setAgPos(i, getFreePos(TAREA));
+					this.tareas_mas_cercanas.add(new Location((GSize-1)/2,(GSize-1)/2));
+				}
+				
 			} catch (Exception e) {
                 e.printStackTrace();
             }
         }
+		
+		public int getNumTripulantes(){
+			return num_tripulantes;
+		}
+		
+		public int getNumImpostores(){
+			return num_impostores;
+		}
+		
+		public Location getTareaMasCercana(int agId) {
+			return tareas_mas_cercanas.get(agId);
+		}
 		
 		public Location getOxigenoLocation() {
 			return oxigeno_loc;
@@ -158,7 +167,7 @@ public class NaveModel extends GridWorldModel {
         }
 		
 
-        void moveTowards(int x, int y, int agId) throws Exception {
+        void moveTowards(int agId, int x, int y) throws Exception {
             Location pos = getAgPos(agId);
             if (pos.x < x)
                 pos.x++;
@@ -189,8 +198,8 @@ public class NaveModel extends GridWorldModel {
         }
 		
 		
-		void sabotear_oxigeno() {
-			logger.info("saboteo en OXIGENO ");
+		void sabotear_oxigeno(int agId) {
+			logger.info(agId + "saboteo en OXIGENO ");
                 if (true) {
                     remove(OXIGENO, oxigeno_loc);
 					add(OXIGENO_SABOTEADO, oxigeno_loc);
@@ -202,13 +211,13 @@ public class NaveModel extends GridWorldModel {
             
         }
 		
-		void arreglar_oxigeno() {
+		void arreglar_oxigeno(int agId) {
 			if (this.hasObject(OXIGENO_SABOTEADO, oxigeno_loc)) {
 				// la realizacion del sabotaje puede fallar
 				if (true) {
 					remove(OXIGENO_SABOTEADO,oxigeno_loc);
 					add(OXIGENO, oxigeno_loc);
-					logger.info("Oxigeno arreglado");
+					logger.info(agId + "Oxigeno arreglado");
 				} else {
 					logger.info("Ha fallado el arreglo del oxigeno");
 					logger.info("Volviendo a intentar arreglar oxigeno");
@@ -216,8 +225,8 @@ public class NaveModel extends GridWorldModel {
 			}
 		}
 		
-		void sabotear_reactor() {
-			logger.info("saboteo en REACTOR");
+		void sabotear_reactor(int agId) {
+			logger.info(agId + "saboteo en REACTOR");
                 if (true) {
                     remove(REACTOR, reactor_loc);
 					add(REACTOR_SABOTEADO, reactor_loc);
@@ -229,13 +238,13 @@ public class NaveModel extends GridWorldModel {
             
         }
 		
-		void arreglar_reactor() {
+		void arreglar_reactor(int agId) {
 			if (this.hasObject(REACTOR_SABOTEADO, reactor_loc)) {
 				// la realizacion del sabotaje puede fallar
 				if (true) {
 					remove(REACTOR_SABOTEADO,reactor_loc);
 					add(REACTOR, reactor_loc);
-					logger.info("Reactor arreglado");
+					logger.info(agId + " - Reactor arreglado");
 				} else {
 					logger.info("Ha fallado el arreglo del reactor");
 					logger.info("Volviendo a intentar arreglar reactor");
@@ -252,7 +261,7 @@ public class NaveModel extends GridWorldModel {
 		
 		void asignar_nueva_tarea(int agId) {
 			
-            Location r1 = getAgPos(agId);
+            Location pos = getAgPos(agId);
             int [][] nave = this.data;
             int [] nearestTask = {(GSize-1)/2,(GSize-1)/2}; // si no quedan tareas vuelve al centro
             double nearestDistance = 9999;
@@ -260,7 +269,7 @@ public class NaveModel extends GridWorldModel {
             for (int i = 0; i < nave.length; i++){
                 for (int j = 0; j < nave[i].length; j++){
                     if (nave[i][j] == TAREA) {
-                        dist = distance(r1.x, r1.y, i, j);
+                        dist = distance(pos.x, pos.y, i, j);
                         if (dist < nearestDistance) {
                             nearestDistance = dist;
                             nearestTask[0] = i;
@@ -269,7 +278,7 @@ public class NaveModel extends GridWorldModel {
                     }
                 }
             }
-            	this.tarea_mas_cercana = new Location(nearestTask[0], nearestTask[1]);
+            	this.tareas_mas_cercanas.set(agId, new Location(nearestTask[0], nearestTask[1]));
         }
 
     }

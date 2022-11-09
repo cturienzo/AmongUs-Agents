@@ -32,12 +32,18 @@ public class NaveModel extends GridWorldModel {
 		
 		private Random random = new Random(System.currentTimeMillis());
 		
+		private int num_tripulantes, num_impostores;
+		
         public NaveModel(int num_tripulantes, int num_impostores) {
             
 			super(GSize, GSize, num_tripulantes + num_impostores);
 		
             try {
 				
+				this.num_tripulantes = num_tripulantes;
+				this.num_impostores = num_impostores;
+				
+				/*
 				int x1 = random.nextInt(GSize);
 				int y1 = random.nextInt(GSize);
 				
@@ -46,10 +52,12 @@ public class NaveModel extends GridWorldModel {
 				
                 	setAgPos(0, x1, y1);
 				setAgPos(1, x2, y2);
+				*/
+				
 				this.tarea_mas_cercana = new Location((GSize-1)/2,(GSize-1)/2);
 				
-				// crear n_tareas
-				crearTareas(8);
+				// crear 3 tareas por tripulante
+				crearTareas(this.num_tripulantes*3);
 				
 				// crear el reactor y el oxigeno
 				reactor_loc = new Location(GSize-1, GSize-1);
@@ -113,6 +121,9 @@ public class NaveModel extends GridWorldModel {
 			}
 		}
 
+		
+		// Acciones
+		
         void nextSlot_crewmate(int agId) throws Exception {
             Location pos = getAgPos(agId);
             pos.x ++;
@@ -120,7 +131,7 @@ public class NaveModel extends GridWorldModel {
                 pos.x = 0;
                 pos.y++;
             }
-            // finished searching the whole grid
+            // vuelve al inicio
             if (pos.y == getHeight()) {
                 pos.y = 0;
                 pos.x++;
@@ -138,7 +149,7 @@ public class NaveModel extends GridWorldModel {
                 pos.x = 0;
                 pos.y++;
             }
-            // finished searching the whole grid
+            // vuelve al inicio
             if (pos.y == getHeight()) {
                 pos.y = 0;
                 pos.x++;

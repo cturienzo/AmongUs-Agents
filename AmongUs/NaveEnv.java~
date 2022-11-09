@@ -63,7 +63,7 @@ public class NaveEnv extends Environment {
         logger.info(ag+" doing: "+ action);
 		
         try {
-			Thread.sleep(200);
+			Thread.sleep(sleep);
             if (action.equals(ns_crew)) {
                 model.nextSlot_crewmate();
 			}else if(action.equals(ns_imp)){

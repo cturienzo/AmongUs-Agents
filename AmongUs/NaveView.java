@@ -20,8 +20,11 @@ public class NaveView extends GridWorldView {
 		private BufferedImage reactor_image;
 		private BufferedImage oxygen_image;
 		
+		private NaveModel model;
+		
         public NaveView(NaveModel model) {
             super(model, "Among Us", 600);
+			this.model = model;
             defaultFont = new Font("Arial", Font.BOLD, 12); // change default font
             setVisible(true);
 			try {
@@ -65,25 +68,19 @@ public class NaveView extends GridWorldView {
         @Override
         public void drawAgent(Graphics g, int x, int y, Color c, int id) {
             String label;
-			if (id == 0) {
-				label = "T"+(id+1);
-                	c = Color.blue;
-				//super.drawAgent(g, x, y, c, id);
+			int n_tripulantes = model.getNumTripulantes();
+			if (id < n_tripulantes) {
 				g.drawImage(crewmate_image,x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8, null);
             } else {
-				int impostor_id = id - 1;
-				label = "I"+(impostor_id+1);
-				c = Color.red;
-				//super.drawAgent(g, x, y, c, id);
 				g.drawImage(imposter_image,x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8, null);
 			}
-			//super.drawString(g, x, y, defaultFont, label);
             repaint();
         }
 
         public void drawElemento(Graphics g, int x, int y, int id_elemento) {
 			
 			if(id_elemento==NaveModel.TAREA){
+				
 				g.setColor(Color.red);
 				g.fillOval(x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8);
 
@@ -92,21 +89,10 @@ public class NaveView extends GridWorldView {
 				g.fillOval(x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8);
 			}else if (id_elemento == NaveModel.OXIGENO){
 				
-				/*g.setColor(Color.blue);
-				g.fillOval(x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8);
-				
-				g.setColor(Color.white);
-				String label = "OX";
-				super.drawString(g, x, y, defaultFont, label);*/
 				g.drawImage(oxygen_image,x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8, null);
 			}
 			else if (id_elemento == NaveModel.REACTOR){
-				/*g.setColor(Color.orange);
-				g.fillOval(x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8);
 				
-				g.setColor(Color.white);
-				String label = "R";
-				super.drawString(g, x, y, defaultFont, label);*/
 				g.drawImage(reactor_image,x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8, null);
 
 			}

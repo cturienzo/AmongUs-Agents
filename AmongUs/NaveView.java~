@@ -22,7 +22,7 @@ public class NaveView extends GridWorldView {
 		
         public NaveView(NaveModel model) {
             super(model, "Among Us", 600);
-            defaultFont = new Font("Arial", Font.BOLD, 18); // change default font
+            defaultFont = new Font("Arial", Font.BOLD, 12); // change default font
             setVisible(true);
 			try {
 				crewmate_image = ImageIO.read(getClass().getResourceAsStream("../images/crewmate.png"));

@@ -2,7 +2,7 @@
 
 /* Initial beliefs */
 
-at(P) :- pos(P,X,Y) & pos(r2,X,Y).
+at(P) :- pos(P,X,Y) & pos(impostor,X,Y).
 
 /* Initial goal */
 
@@ -12,10 +12,10 @@ at(P) :- pos(P,X,Y) & pos(r2,X,Y).
 +!check(slots)<- next_imp(slot);
       !check(slots).
 
-+intencion_sabotear_ox(r2)<- sabotear_oxigeno(oxigeno);
++intencion_sabotear_ox(impostor)<- sabotear_oxigeno(oxigeno);
       !check(slots).
 	  
-+intencion_sabotear_re(r2)<- sabotear_reactor(reactor);
++intencion_sabotear_re(impostor)<- sabotear_reactor(reactor);
       !check(slots).
 
 

@@ -32,19 +32,16 @@ at(P) :- pos(P,X,Y) & pos(r1,X,Y).
 	   //!at(tarea_mas_cercana);
        !completar_tareas(r2).
 	   
-+oxigeno_saboteado(pos_ox):true
++!completar_tareas(r2):oxigeno_saboteado(pos_ox)
     <- !at(ox);
        arreglar_oxigeno(oxigeno);
        !completar_tareas(r2).
 
 
-+reactor_saboteado(pos_re):true
++!completar_tareas(r2):reactor_saboteado(pos_re)
     <- !at(re);
        arreglar_reactor(reactor);
        !completar_tareas(r2).
-
-+!completar_tareas(r2):  true
-    <- true.
 	   
 
 +!at(L) : at(L).

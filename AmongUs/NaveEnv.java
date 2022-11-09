@@ -18,7 +18,7 @@ public class NaveEnv extends Environment {
     public static final Term ns_crew = Literal.parseLiteral("next_crew(slot)");
 	public static final Term ns_imp = Literal.parseLiteral("next_imp(slot)");
 	
-	public static final Term at = Literal.parseLiteral("asignar_nueva_tarea(tripulante)");
+	public static final Term mt = Literal.parseLiteral("moverse_a_tarea(tripulante)");
 	public static final Term rt = Literal.parseLiteral("realizar_tarea(tarea)");
 	
 	public static final Term so = Literal.parseLiteral("sabotear_oxigeno(oxigeno)");
@@ -28,11 +28,11 @@ public class NaveEnv extends Environment {
 	public static final Term ar = Literal.parseLiteral("arreglar_reactor(reactor)");
 
 
-    public static final Literal g1 = Literal.parseLiteral("tarea(r1)");
-    public static final Literal g2 = Literal.parseLiteral("tarea_completada(r2)");
+    public static final Literal g1 = Literal.parseLiteral("tarea(tripulante)");
+    public static final Literal g2 = Literal.parseLiteral("tarea_completada(tripulante)");
 	
-	public static final Literal int_sab_ox = Literal.parseLiteral("intencion_sabotear_ox(r2)");
-	public static final Literal int_sab_re = Literal.parseLiteral("intencion_sabotear_re(r2)");
+	public static final Literal int_sab_ox = Literal.parseLiteral("intencion_sabotear_ox(impostor)");
+	public static final Literal int_sab_re = Literal.parseLiteral("intencion_sabotear_re(impostor)");
 
 
 	public static final Literal ox_sab = Literal.parseLiteral("oxigeno_saboteado(pos_ox)");
@@ -55,53 +55,123 @@ public class NaveEnv extends Environment {
         model = new NaveModel(num_tripulantes, num_impostores);
         view  = new NaveView(model);
         model.setView(view);
-        updatePercepts();
+
+		Location ox_loc = model.getOxigenoLocation();
+		Location react_loc = model.getReactorLocation();
+        
+		//Posicion del oxigeno y del reactor
+		addPercept(Literal.parseLiteral("pos(ox," + ox_loc.x + "," + ox_loc.y + ")"));
+		addPercept(Literal.parseLiteral("pos(re," + react_loc.x + "," + react_loc.y + ")"));
+		
+		updatePercepts();
     }
 
     @Override
     public boolean executeAction(String ag, Structure action) {
         logger.info(ag+" doing: "+ action);
-		
+		int agId = getAgIdBasedOnName(ag);
+
         try {
 			Thread.sleep(sleep);
             if (action.equals(ns_crew)) {
-                model.nextSlot_crewmate();
+                
+				model.nextSlot_crewmate(agId);
+			
 			}else if(action.equals(ns_imp)){
-				model.nextSlot_impostor();
-            } else if(action.equals(at)) {
+			
+				model.nextSlot_impostor(agId);
+            
+			} else if(action.equals(mt)) {
 				
-				model.asignar_nueva_tarea();
-				model.moveTowards(model.tarea_mas_cercana.x, model.tarea_mas_cercana.y);
+				model.asignar_nueva_tarea(agId);
+				Location t = model.getTareaMasCercana(agId);
+				model.moveTowards(agId, t.x, t.y);
 				
-			}else if (action.getFunctor().equals("move_towards")) {
-                int x = (int)((NumberTerm)action.getTerm(0)).solve();
-                int y = (int)((NumberTerm)action.getTerm(1)).solve();
-                model.moveTowards(x,y);
+			} else if (action.getFunctor().equals("move_towards")) {
+                
+				int x = (int)((NumberTerm)action.getTerm(0)).solve();
+                	int y = (int)((NumberTerm)action.getTerm(1)).solve();
+				model.moveTowards(agId, x,y);
 				
             } else if (action.equals(rt)) {
-                model.realizar_tarea();      
-            } else if (action.equals(so)) {
-                model.sabotear_oxigeno();
-            }else if (action.equals(ao)) {
-                model.arreglar_oxigeno();
-            }else if (action.equals(sr)) {
-                model.sabotear_reactor();
-            }else if (action.equals(ar)) {
-                model.arreglar_reactor();
-            }else {
-                return false;
-            }
+				
+                model.realizar_tarea(agId);      
+            
+			} else if (action.equals(so)) {
+            
+				model.sabotear_oxigeno(agId);
+            
+			}else if (action.equals(ao)) {
+            
+				model.arreglar_oxigeno(agId);
+            
+			}else if (action.equals(sr)) {
+            
+				model.sabotear_reactor(agId);
+            
+			}else if (action.equals(ar)) {
+            
+				model.arreglar_reactor(agId);
+            
+			}else {
+            
+				return false;
+            
+			}
         } catch (Exception e) {
-            e.printStackTrace();
-        }
+            
+			e.printStackTrace();
+        
+		}
 
         updatePercepts();
         informAgsEnvironmentChanged();
         return true;
     }
+    
+	private void updatePercepts() {
+		updateAgsPercept();	
+	}
+	
+	private void updateAgsPercept() {
+        for (int id = 0; id < model.getNbOfAgs(); id++) {
+			if (id < model.getNumTripulantes())
+				updateTripulantePercepts(id);
+			else
+				updateImpostorPercepts(id);
+        }
+    }
+	
+	private void updateTripulantePercepts(int agId) {
+		Location l = model.getAgPos(agId);
+		String agName = "tripulante" + (agId+1);
+		
+		addPercept(agName, Literal.parseLiteral("pos(" + l.x + "," + l.y + ")"));
+		
+		if (model.hasObject(NaveModel.TAREA, l)) {
+            addPercept(agName, Literal.parseLiteral("tarea(tripulante)"));
+        }
+		if (model.hasObject(NaveModel.TAREA_COMPLETADA, l)) {
+			removePercept(agName, Literal.parseLiteral("tarea(tripulante)"));
+        }
+		if (!model.hasObject(NaveModel.TAREA, l)) {
+            removePercept(agName, Literal.parseLiteral("tarea(tripulante)"));
+        }
 
-    /** creates the agents perception based on the NaveModel */
-    void updatePercepts() {
+	}
+	
+	private void updateImpostorPercepts(int agId) {
+
+		Location l = model.getAgPos(agId);
+		int impostorId = agId - model.getNumTripulantes();
+		String agName = "impostor" + (impostorId+1);
+		
+		addPercept(agName, Literal.parseLiteral("pos(" + l.x + "," + l.y + ")"));
+		
+	}
+	
+    /**
+    void updateTripulantePercept() {
         clearPercepts();                                                
 		
 		Random random = new Random(System.currentTimeMillis());
@@ -130,10 +200,10 @@ public class NaveEnv extends Environment {
 		Literal nt = Literal.parseLiteral("pos(tarea_mas_cercana," + tarea_cercana.x  + "," + tarea_cercana.y + ")");
 		
 		logger.info("[tripulante] Yendo hacia la tarea en posicion: " + tarea_cercana);
-		*/		
+				
 		//addPercept("r1", nt);
 		//addPercept("r1", nt_ant);
-		/*
+		
 		if (!nt_ant.equals(nt)){
 			addPercept("r1", nt);
 			
@@ -143,7 +213,7 @@ public class NaveEnv extends Environment {
 				nearest_Task_ant.x = nearest_Task.x;
 				nearest_Task_ant.y = nearest_Task.y;
 			}
-		}*/
+		}
 		
 		//Posicion del oxigeno y del reactor
 		addPercept(pos_ox);
@@ -163,7 +233,7 @@ public class NaveEnv extends Environment {
 			removePercept("tripulante",Literal.parseLiteral("tarea(r1)"));
         }
 			
-		/*
+		
 		boolean sabotajeDisponible = model.getSaboteoDisponible();	
 		// logica sabotear
 		if (sabotajeDisponible){
@@ -196,9 +266,19 @@ public class NaveEnv extends Environment {
 			model.setReactorSaboteado(false);
         }
 		
-		*/
+		
 			logger.info("O2 " + model.getOxigenoSaboteado());
 			logger.info("REACTOR "+ model.getReactorSaboteado());
     }
+	*/
+
+	private int getAgIdBasedOnName(String agName) {
+		
+		if (agName.startsWith("tripulante"))
+			return (Integer.parseInt(agName.substring(agName.length()-1))) - 1;
+		else 
+			return model.getNumTripulantes();
+
+	}
 	
 }
