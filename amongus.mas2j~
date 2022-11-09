@@ -1,0 +1,5 @@
+MAS amongus {
+
+    environment: AmongUs.NaveEnv(1,1)
+    agents: tripulante;impostor;
+}

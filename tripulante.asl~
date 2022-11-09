@@ -1,4 +1,4 @@
-// mars robot 1
+// tripulante
 
 /* Initial beliefs */
 
@@ -8,7 +8,7 @@ at(P) :- pos(P,X,Y) & pos(r1,X,Y).
 /* Initial goal */
 
 //!check(slots).
-!know_next_task(r2).
+!completar_tareas(r2).
 
 /* Plans */
 
@@ -23,29 +23,29 @@ at(P) :- pos(P,X,Y) & pos(r1,X,Y).
     <- realizar_tarea(tarea);
         !check(slots). */
 
-
-+!know_next_task(r2): tarea(r1) & not oxigeno_saboteado(pos_ox) & not  reactor_saboteado(pos_re)
++!completar_tareas(r2): tarea(r1) & not oxigeno_saboteado(pos_ox) & not reactor_saboteado(pos_re)
     <- realizar_tarea(tarea);
-       !know_next_task(r2).
+       !completar_tareas(r2).
 
-+!know_next_task(r2): not tarea(r1) & not oxigeno_saboteado(pos_ox) & not  reactor_saboteado(pos_re)
-    <- !at(nearest_task);
-       !know_next_task(r2).
++!completar_tareas(r2): not tarea(r1) & not oxigeno_saboteado(pos_ox) & not reactor_saboteado(pos_re)
+    <- asignar_nueva_tarea(tripulante);
+	   //!at(tarea_mas_cercana);
+       !completar_tareas(r2).
 	   
-
-
-+!know_next_task(r2): oxigeno_saboteado(pos_ox)
++oxigeno_saboteado(pos_ox):true
     <- !at(ox);
        arreglar_oxigeno(oxigeno);
-       !know_next_task(r2).
+       !completar_tareas(r2).
 
 
-+!know_next_task(r2): reactor_saboteado(pos_re)
++reactor_saboteado(pos_re):true
     <- !at(re);
        arreglar_reactor(reactor);
-       !know_next_task(r2).
+       !completar_tareas(r2).
 
-
++!completar_tareas(r2):  true
+    <- true.
+	   
 
 +!at(L) : at(L).
 +!at(L) <- ?pos(L,X,Y);
