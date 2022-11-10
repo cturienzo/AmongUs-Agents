@@ -10,7 +10,7 @@ import java.util.ArrayList;
 public class NaveModel extends GridWorldModel {
 		
 		public static Logger logger 					= Logger.getLogger(NaveEnv.class.getName());
-	    public static final int GSize 				= 12; // tamaño grid
+	    public static final int GSize 				= 10; // tamaño grid
 		public static final int TAREA 				= 16; // codigo tarea sin realizar
 		public static final int TAREA_COMPLETADA  	= 32; // codigo tarea completada
 		
@@ -186,7 +186,7 @@ public class NaveModel extends GridWorldModel {
                 // la realizacion de la tarea puede fallar
                 if (true) {
                     remove(TAREA, getAgPos(agId));
-				    add(TAREA_COMPLETADA, getAgPos(agId));
+				    add(TAREA_COMPLETADA, getAgPos(agId)); // se añade un indicador visual para ver que se ha completado la tarea
 					logger.info("Tarea completada");
                     	nerr = 0;
                 } else {
@@ -199,7 +199,7 @@ public class NaveModel extends GridWorldModel {
 		
 		
 		void sabotear_oxigeno(int agId) {
-			logger.info(agId + "saboteo en OXIGENO ");
+			logger.info("["+agId +"] saboteo en OXIGENO ");
                 if (true) {
                     remove(OXIGENO, oxigeno_loc);
 					add(OXIGENO_SABOTEADO, oxigeno_loc);
@@ -212,12 +212,12 @@ public class NaveModel extends GridWorldModel {
         }
 		
 		void arreglar_oxigeno(int agId) {
-			if (this.hasObject(OXIGENO_SABOTEADO, oxigeno_loc)) {
+			if (this.hasObject(OXIGENO_SABOTEADO, getAgPos(agId))) {
 				// la realizacion del sabotaje puede fallar
 				if (true) {
 					remove(OXIGENO_SABOTEADO,oxigeno_loc);
 					add(OXIGENO, oxigeno_loc);
-					logger.info(agId + "Oxigeno arreglado");
+					logger.info("["+agId +"] Oxigeno arreglado");
 				} else {
 					logger.info("Ha fallado el arreglo del oxigeno");
 					logger.info("Volviendo a intentar arreglar oxigeno");
@@ -226,7 +226,7 @@ public class NaveModel extends GridWorldModel {
 		}
 		
 		void sabotear_reactor(int agId) {
-			logger.info(agId + "saboteo en REACTOR");
+			logger.info("["+agId +"] saboteo en REACTOR");
                 if (true) {
                     remove(REACTOR, reactor_loc);
 					add(REACTOR_SABOTEADO, reactor_loc);
@@ -239,12 +239,12 @@ public class NaveModel extends GridWorldModel {
         }
 		
 		void arreglar_reactor(int agId) {
-			if (this.hasObject(REACTOR_SABOTEADO, reactor_loc)) {
+			if (this.hasObject(REACTOR_SABOTEADO, getAgPos(agId))) {
 				// la realizacion del sabotaje puede fallar
 				if (true) {
 					remove(REACTOR_SABOTEADO,reactor_loc);
 					add(REACTOR, reactor_loc);
-					logger.info(agId + " - Reactor arreglado");
+					logger.info("["+agId +"] - Reactor arreglado");
 				} else {
 					logger.info("Ha fallado el arreglo del reactor");
 					logger.info("Volviendo a intentar arreglar reactor");

@@ -19,20 +19,24 @@ public class NaveView extends GridWorldView {
 		private BufferedImage imposter_image;
 		private BufferedImage reactor_image;
 		private BufferedImage oxygen_image;
+		private BufferedImage tarea_image;
+		private BufferedImage tarea_completada_image;
 		
 		private NaveModel model;
 		
         public NaveView(NaveModel model) {
-            super(model, "Among Us", 600);
+            super(model, "Among Us", 800);
 			this.model = model;
             defaultFont = new Font("Arial", Font.BOLD, 12); // change default font
             setVisible(true);
 			try {
+				
 				crewmate_image = ImageIO.read(getClass().getResourceAsStream("../images/crewmate.png"));
 				imposter_image = ImageIO.read(getClass().getResourceAsStream("../images/imposter.png"));
 				reactor_image = ImageIO.read(getClass().getResourceAsStream("../images/reactor.png"));
 				oxygen_image = ImageIO.read(getClass().getResourceAsStream("../images/oxygen.png"));
-
+				tarea_image = ImageIO.read(getClass().getResourceAsStream("../images/tarea.png"));
+				tarea_completada_image = ImageIO.read(getClass().getResourceAsStream("../images/tarea_completada.png"));
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -69,10 +73,15 @@ public class NaveView extends GridWorldView {
         public void drawAgent(Graphics g, int x, int y, Color c, int id) {
             String label;
 			int n_tripulantes = model.getNumTripulantes();
-			if (id < n_tripulantes) {
+			
+			if (id < n_tripulantes) { // dibujar tripulantes
 				g.drawImage(crewmate_image,x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8, null);
-            } else {
+				super.drawString(g, x * cellSizeW+12, y * cellSizeH+12, defaultFont, "T"+id);
+            
+			} else { // dibujar impostores
+			
 				g.drawImage(imposter_image,x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8, null);
+			
 			}
             repaint();
         }
@@ -80,39 +89,31 @@ public class NaveView extends GridWorldView {
         public void drawElemento(Graphics g, int x, int y, int id_elemento) {
 			
 			if(id_elemento==NaveModel.TAREA){
-				
-				g.setColor(Color.red);
-				g.fillOval(x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8);
+				g.drawImage(tarea_image,x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8, null);
 
-			}else if (id_elemento == NaveModel.TAREA_COMPLETADA){
-				g.setColor(Color.green);
-				g.fillOval(x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8);
-			}else if (id_elemento == NaveModel.OXIGENO){
+			} else if (id_elemento == NaveModel.TAREA_COMPLETADA){
+				
+				g.drawImage(tarea_completada_image,x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8, null);
+			
+			} else if (id_elemento == NaveModel.OXIGENO){
 				
 				g.drawImage(oxygen_image,x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8, null);
-			}
-			else if (id_elemento == NaveModel.REACTOR){
+			
+			} else if (id_elemento == NaveModel.REACTOR){
 				
 				g.drawImage(reactor_image,x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8, null);
 
-			}
-			else if (id_elemento == NaveModel.OXIGENO_SABOTEADO){
-				g.setColor(Color.red);
-				g.fillOval(x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8);
+			} else if (id_elemento == NaveModel.OXIGENO_SABOTEADO){
 				
-				g.setColor(Color.white);
-				String label = "OX";
-				super.drawString(g, x, y, defaultFont, label);
-			}
-			else if (id_elemento == NaveModel.REACTOR_SABOTEADO){
-				g.setColor(Color.red);
-				g.fillOval(x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8);
-				
-				g.setColor(Color.white);
-				String label = "R";
-				super.drawString(g, x, y, defaultFont, label);
-			}
-				
+				g.drawImage(oxygen_image,x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8, Color.red, null);
+
+			} else if (id_elemento == NaveModel.REACTOR_SABOTEADO){
+
+				g.drawImage(reactor_image,x * cellSizeW + 7, y * cellSizeH + 7, cellSizeW - 8, cellSizeH - 8, Color.red, null);
+
+			}	
+			
+			repaint();
             
         }
 

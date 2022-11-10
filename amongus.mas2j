@@ -1,6 +1,6 @@
 MAS amongus {
 
-    environment: AmongUs.NaveEnv(4, 2, 100) // n_tripulantes, n_impostores, tiempo sleep
-    agents: tripulante#4;impostor#2;
+    environment: AmongUs.NaveEnv(2, 1, 100) // n_tripulantes, n_impostores, tiempo sleep
+    agents: tripulante#2;impostor#1;
 	
 }
